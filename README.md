@@ -17,14 +17,14 @@ Deploy MySQL as Statefulset in Kubernetes Cluster and deploy mysqld-exporter to 
 ![Prometheus](images/prometheus-metrics.png)
 
 ##### Prometheus Targets
-![Prometheus](images/mysqld-exporter-prometheus.png)
+![Prometheus](images/mysqld-exporter-prometheus.PNG)
 
 ### Grafana Dashboard
 
-![Grafana Dashboard](images/Grafana-Dashboard.png)
+![Grafana Dashboard](images/Grafana-Dashboard.PNG)
 
 ##### Simple Service Webapp
-![Prometheus](images/simple-service.png)
+![Prometheus](images/simple-service.PNG)
 
 ---
 ## Technology Used
