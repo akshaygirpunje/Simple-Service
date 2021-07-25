@@ -2,7 +2,8 @@
 
 Simple-service is an golang HTTP api.It has only a /live endpoint answering text/plain; charset=utf-8. The following responses are possibly:
 
-Well done :): if the application was able to connect with a Postgres database
+Well done :): if the application was able to connect with a Postgres database.
+
 Running: if some error occurred during the connection with the database.
 
 # MySQL DB as Statefulset
@@ -37,20 +38,11 @@ Deploy MySQL as Statefulset in Kubernetes Cluster and deploy mysqld-exporter to 
 
 ---
 ## Set-up
-
-1. Configure urls part in [urls.json](urls.json) with URLs you wish to monitor. This is currently configured with two urls as an example.
-
-```
-    {
-    "urls": ["https://httpstat.us/200","https://httpstat.us/503"]
-    }
-```
-
-2. Build Docker image and push to repository of your choosing
+1. Build Docker image and push to repository of your choosing
 
 ```shell
-docker build -t $USERNAME/pythonmonitorurls .
-docker push $USERNAME/pythonmonitorurls:$tagname
+docker build -t $USERNAME/simple-service:$tagname .
+docker push $USERNAME/simple-service:$tagname
 ```
 
 3. Create kubernetes cluster with 1.15+ using any Kubernetes cluster creation method.
@@ -82,25 +74,44 @@ To test with kubernetes cluster ensure that it is properly installed according t
 ```shell
 kubectl create secret docker-registry regcred --docker-server=<your-registry-server> --docker-username=<your-name> --docker-password=<your-pword> --docker-email=<your-email>
 ```
-2. In [deployment.yaml](deployment.yaml) change `image: akshaygirpunje/pythonmonitorurls:latest` to newly built Docker image you done in the set-up and also change the secret name.
+2. In [deployment-prod.yaml](deployment-prod.yaml) change `image: akshaygirpunje/simple-service:v18` to newly built Docker image you done in the set-up and also change the secret name.
 
-3.  Run `kubectl deployment.yaml and service.yaml`
+3.  Run `kubectl deployment-prod.yaml and service.yaml`
 
 ```shell
-kubectl apply -f deployment.yaml
-service/monitor-internet-urls created
+kubectl apply -f deployment-prod.yaml
+deployment.apps/simple-service created
 
-kubectl apply -f service.yaml
-deployment.apps/monitor-internet-urls created
+kubectl apply -f deployment.yaml
+service/simple-service created
 ```
 -   View the deployment
 
 ```shell
-kubectl get deployments
+kubectl get deployment simple-service
 
-NAME                                  READY   UP-TO-DATE   AVAILABLE   AGE
-monitor-internet-urls                 1/1     1            1           3h17m
+NAME             READY   UP-TO-DATE   AVAILABLE   AGE
+simple-service   1/1     1            1           9d
 ```
+
+4.  Run `kubectl deployment-prod.yaml and service.yaml`
+
+```shell
+kubectl apply -f deployment-prod.yaml
+deployment.apps/simple-service created
+
+kubectl apply -f deployment.yaml
+service/simple-service created
+```
+-   View the deployment
+
+```shell
+kubectl get deployment simple-service
+
+NAME             READY   UP-TO-DATE   AVAILABLE   AGE
+simple-service   1/1     1            1           9d
+```
+
 
 4.  View the services & if you want to access the Prometheus,Grafana URL from outside of cluster change the type of `prometheus-grafana` & `prometheus-prometheus-oper-prometheus` services to NodePort or LoadBalancer from ClusterIP. 
 
@@ -110,6 +121,8 @@ NAME                                      TYPE        CLUSTER-IP       EXTERNAL-
 alertmanager-operated                     ClusterIP   None             <none>        9093/TCP,9094/TCP,9094/UDP   10h
 kubernetes                                ClusterIP   10.96.0.1        <none>        443/TCP                      2d22h
 monitor-internet-urls                     NodePort    10.111.11.17     <none>        8001:31060/TCP               3h18m
+mysql                                     ClusterIP   10.102.183.81    <none>        3306/TCP                     24h
+mysqld-exporter                           NodePort    10.106.34.219    <none>        9104:31362/TCP               10h
 prometheus-grafana                        NodePort    10.103.255.157   <none>        80:31744/TCP                 10h
 prometheus-kube-state-metrics             ClusterIP   10.107.212.55    <none>        8080/TCP                     10h
 prometheus-operated                       ClusterIP   None             <none>        9090/TCP                     10h
@@ -117,6 +130,7 @@ prometheus-prometheus-node-exporter       ClusterIP   10.107.53.138    <none>   
 prometheus-prometheus-oper-alertmanager   ClusterIP   10.109.48.122    <none>        9093/TCP                     10h
 prometheus-prometheus-oper-operator       ClusterIP   10.97.212.254    <none>        8080/TCP,443/TCP             10h
 prometheus-prometheus-oper-prometheus     NodePort    10.96.241.233    <none>        9090:31105/TCP               10h
+simple-service                            NodePort    10.100.242.112   <none>        8000:31999/TCP               10h
 ```
 
 5. Test services through `CLI` or `Web Browser`
@@ -124,25 +138,18 @@ prometheus-prometheus-oper-prometheus     NodePort    10.96.241.233    <none>   
 - Check using CLI
 
 ```shell
-curl http://10.111.11.17:8001/metrics
-# HELP sample_external_url_response_ms HTTP response in milliseconds
-# TYPE sample_external_url_response_ms gauge
-sample_external_url_response_ms{url="https://httpstat.us/200"} 129
-sample_external_url_response_ms{url="https://httpstat.us/503"} 120
-# HELP sample_external_url_up Boolean status of site up or down
-# TYPE sample_external_url_up gauge
-sample_external_url_up{url="https://httpstat.us/200"} 1
-sample_external_url_up{url="https://httpstat.us/503"} 0
+curl http://10.100.242.112:8000/live
+Running
 ```
 
--   Check `prometheus-grafana` , `prometheus-prometheus-oper-prometheus` & `monitor-internet-urls` services using web browser.
+-   Check `prometheus-grafana` , `prometheus-prometheus-oper-prometheus` & `simple-service` services using web browser.
 
 ```shell
 #Syntax
 #http://{WorkerNodeIp or LB}:NodePort
 http://{WorkerNodeIp or LB}:31150
 http://{WorkerNodeIp or LB}:31744
-http://{WorkerNodeIp or LB}:31060/metrics 
+http://{WorkerNodeIp or LB}:31999/live 
 ```
 
 ---
