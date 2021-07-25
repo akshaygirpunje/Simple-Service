@@ -1,0 +1,14 @@
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: mysql-02
+  labels:
+    type: local
+spec:
+  storageClassName: localstorage
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/mnt/mysql02"

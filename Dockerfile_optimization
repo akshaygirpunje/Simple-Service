@@ -1,0 +1,23 @@
+FROM golang:1.16
+ENV GO111MODULE=on
+
+RUN mkdir -p /usr/local/simple-service
+WORKDIR /usr/local/simple-service
+ADD simple-service/ /usr/local/simple-service
+
+# Build
+RUN GO111MODULE=on go build
+
+
+# Release stage
+FROM alpine:3.8
+RUN apk --no-cache add ca-certificates
+EXPOSE 8000
+
+WORKDIR /root/
+
+COPY --from=0 /usr/local/simple-service/simple-service  .
+
+COPY entrypoint.sh ./
+
+ENTRYPOINT ["/bin/bash", "./entrypoint.sh"]

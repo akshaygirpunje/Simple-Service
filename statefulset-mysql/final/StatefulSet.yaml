@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql-container
+spec:
+  serviceName: mysql
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mysql-container
+  template:
+    metadata:
+      labels:
+        app: mysql-container
+    spec:
+      containers:
+        - name: mysql-container
+          image: 'mysql:8'
+          env:
+          - name: MYSQL_ROOT_PASSWORD
+            value: admin@123
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3306
+          volumeMounts:
+            - name: mysql-persistent-storage
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: mysql-persistent-storage
+          persistentVolumeClaim:
+            claimName: data-mysql-container-0
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        storageClassName: localstorage
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
+        selector:
+          matchLabels:
+            type: local

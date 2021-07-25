@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simple-service
+  labels:
+    app: simple-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: simple-service
+  template:
+    metadata:
+      labels:
+        app: simple-service
+    spec:
+      containers:
+        - name: simple-service
+          image: akshaygirpunje/simple-service:v18
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "250m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /live
+              port: 8000
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /live
+              port: 8000
+            timeoutSeconds: 5		   
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+      imagePullSecrets:
+      - name: akshaygirpunje-dockerrepo
+
