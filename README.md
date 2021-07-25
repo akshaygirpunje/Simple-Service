@@ -94,26 +94,43 @@ NAME             READY   UP-TO-DATE   AVAILABLE   AGE
 simple-service   1/1     1            1           9d
 ```
 
-4.  Run `kubectl deployment-prod.yaml and service.yaml`
+4.  Install `metrics-server` to monitor the simple-service pods & implement the HPA.
 
 ```shell
-kubectl apply -f deployment-prod.yaml
-deployment.apps/simple-service created
+- kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.5.0/components.yaml
+serviceaccount/metrics-server configured
+clusterrole.rbac.authorization.k8s.io/system:aggregated-metrics-reader configured
+clusterrole.rbac.authorization.k8s.io/system:metrics-server configured
+rolebinding.rbac.authorization.k8s.io/metrics-server-auth-reader configured
+clusterrolebinding.rbac.authorization.k8s.io/metrics-server:system:auth-delegator configured
+clusterrolebinding.rbac.authorization.k8s.io/system:metrics-server configured
+service/metrics-server configured
+deployment.apps/metrics-server created
+apiservice.apiregistration.k8s.io/v1beta1.metrics.k8s.io configured
 
-kubectl apply -f deployment.yaml
-service/simple-service created
+
+- kubectl autoscale deployment simple-service --cpu-percent=35 --min=2 --max=4
+horizontalpodautoscaler.autoscaling/simple-service autoscaled
+
+-kubectl get hpa
+NAME             REFERENCE                   TARGETS         MINPODS   MAXPODS   REPLICAS      AGE
+simple-service   Deployment/simple-service   1%/35%             2         4         2          45s
 ```
--   View the deployment
-
+5.  Configure `mysql DB` as statefulset.
 ```shell
-kubectl get deployment simple-service
+- kubectl get statefulset,pod|grep -i mysql-container
+statefulset.apps/mysql-container                                        2/2     32h
+pod/mysql-container-0                                        1/1     Running   0          3s
+pod/mysql-container-1                                        1/1     Running   0          32h
 
-NAME             READY   UP-TO-DATE   AVAILABLE   AGE
-simple-service   1/1     1            1           9d
+```
+6.  Installation Of Prometheus Operator and `mysqld-exporter` to export the mysql DB metrics to prometheus.
+```shell
+helm install prometheus stable/prometheus-operator
+helm install prometheus-mysql-exporter prometheus-community/prometheus-mysql-exporter
 ```
 
-
-4.  View the services & if you want to access the Prometheus,Grafana URL from outside of cluster change the type of `prometheus-grafana` & `prometheus-prometheus-oper-prometheus` services to NodePort or LoadBalancer from ClusterIP. 
+7.  View the services & if you want to access the Prometheus,Grafana URL from outside of cluster change the type of `prometheus-grafana` & `prometheus-prometheus-oper-prometheus` services to NodePort or LoadBalancer from ClusterIP. 
 
 ```shell
 kubectl get services
@@ -133,7 +150,7 @@ prometheus-prometheus-oper-prometheus     NodePort    10.96.241.233    <none>   
 simple-service                            NodePort    10.100.242.112   <none>        8000:31999/TCP               10h
 ```
 
-5. Test services through `CLI` or `Web Browser`
+8. Test services through `CLI` or `Web Browser`
 
 - Check using CLI
 
@@ -153,14 +170,14 @@ http://{WorkerNodeIp or LB}:31999/live
 ```
 
 ---
-6. Add the service `monitor-internet-urls` endpoint to prometheus's target by adding `job_name` in [value1.yaml](values1.yaml) at `additionalScrapeConfigs` section as follows.
+9. Add the service `mysqld-exporter` endpoint to prometheus's target by adding `job_name` in [value1.yaml](values1.yaml) at `additionalScrapeConfigs` section as follows.
 
 ```shell
     additionalScrapeConfigs:
-      - job_name: 'monitor-internet-urls'
+      - job_name: 'mysqld-exporter'
         honor_labels: true
         static_configs:
-        - targets: ['{WorkerNodeIp or LB}:31060']
+        - targets: ['{WorkerNodeIp or LB}:9104']
 ```
 
 7. Update the `prometheus-operator` repo with new service endpoint.
@@ -171,59 +188,13 @@ http://{WorkerNodeIp or LB}:31999/live
  helm upgrade  prometheus stable/prometheus-operator -f values1.yaml
 ```
 
-8. Configure & test `sample_external_url_up` & `sample_external_url_response_ms` metrics in prometheus at following path
+8. Test `MySQL DB` metrics & targets in prometheus at following path.
 ```shell
  http://{WorkerNodeIp or LB}:31105/graph
+ http://{WorkerNodeIp or LB}:31105/targets
 ```
-9. Configure & test `sample_external_url_up` & `sample_external_url_response_ms` metrics in Grafana & create new Dashboard.
-```shell
- http://{WorkerNodeIp or LB}:31744/dashboard/new?orgId=1
+9. Configure Grafana Dashboard using following dashboard.
+```shell 
+https://grafana.com/grafana/dashboards/7362
 ```
 ---
-
-### Local Testing (Python Script)
-
-1. Run ` python python_monitor_url.py`
-
-```shell
-python python_monitor_url.py
-https://httpstat.us/200 Response Time ---> 0.24364
-https://httpstat.us/200 Status Code ---> 1
-https://httpstat.us/503 Response Time ---> 0.202487
-https://httpstat.us/503 Status Code ---> 0
-https://httpstat.us/200 Response Time ---> 0.140812
-https://httpstat.us/200 Status Code ---> 1
-https://httpstat.us/503 Response Time ---> 0.121563
-https://httpstat.us/503 Status Code ---> 0
-```
-
-2. Curl `localhost`
-```shell
-curl localhost:8001/metrics
-
-# HELP sample_external_url_response_ms HTTP response in milliseconds
-# TYPE sample_external_url_response_ms gauge
-sample_external_url_response_ms{url="https://httpstat.us/200"} 0.078517
-sample_external_url_response_ms{url="https://httpstat.us/503"} 0.129249
-# HELP sample_external_url_up Boolean status of site up or down
-# TYPE sample_external_url_up gauge
-sample_external_url_up{url="https://httpstat.us/200"} 1
-sample_external_url_up{url="https://httpstat.us/503"} 0
-```
-
-3. Unit Test
-```shell
-python -m unittest test_python-monitor-url
-https://httpstat.us/200 Response Time ---> 0.089305
-.https://httpstat.us/503 Response Time ---> 0.11151
-.https://httpstat.us/400 Response Time ---> 0.086959
-.https://httpstat.us/200 Status Code ---> 1
-.https://httpstat.us/503 Status Code ---> 0
-.https://httpstat.us/400 Status Code ---> 0
-.
-----------------------------------------------------------------------
-Ran 6 tests in 0.664s
-
-OK
-
-```
