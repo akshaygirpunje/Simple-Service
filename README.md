@@ -21,7 +21,7 @@ Deploy MySQL as Statefulset in Kubernetes Cluster and deploy mysqld-exporter to 
 
 ### Grafana Dashboard
 
-![Grafana Dashboard](images/Grafana-Dashboard.PNG)
+![Grafana Dashboard](images/MySQL-Overview-Grafana.PNG)
 
 ##### Simple Service Webapp
 ![Prometheus](images/simple-service.PNG)
