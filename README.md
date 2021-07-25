@@ -1,27 +1,32 @@
-# Monitor Internet URLs
+# Simple Service Webapp
 
-Monitor a list of internet URLs with Python instrumented using Prometheus and Grafana served on a Kubernetes Cluster
+Simple-service is an golang HTTP api.It has only a /live endpoint answering text/plain; charset=utf-8. The following responses are possibly:
+
+Well done :): if the application was able to connect with a Postgres database
+Running: if some error occurred during the connection with the database.
+
+# MySQL DB as Statefulset
+
+Deploy MySQL as Statefulset in Kubernetes Cluster and deploy mysqld-exporter to provide prometheus metrics from MySQL DB. 
 
 ---
 
-## Summary
+## Application's Screenshots
 
--   A service written in Python that queries two sample urls every 5 seconds:    
-    -   https://httpstat.us/200
-    -   https://httpstat.us/503
--   The service checks:
-    -   The external urls are up (based on http status code 200) return `1` if up, `0` if otherwise
-    -   Response time in milliseconds
--   The service will run a simple http service that produces metrics (on `/metrics`) and output a Prometheus format when curling the service `/metrics` url
+##### Metrics in Prometheus
+![Prometheus](images/prometheus-metrics.png)
 
-**Sample Response Format**:
-```shell
-sample_external_url_up{url="https://httpstat.us/200 "}  = 1
-sample_external_url_response_ms{url="https://httpstat.us/200 "}  = [value]
-sample_external_url_up{url="https://httpstat.us/503 "}  = 0
-sample_external_url_response_ms{url="https://httpstat.us/503 "}  = [value]
-```
+##### Prometheus Targets
+![Prometheus](images/mysqld-exporter-prometheus.png)
 
+### Grafana Dashboard
+
+![Grafana Dashboard](images/Grafana-Dashboard.png)
+
+##### Simple Service Webapp
+![Prometheus](images/simple-service.png)
+
+---
 ## Technology Used
 
 -   [Python3](https://www.python.org/)
@@ -31,31 +36,6 @@ sample_external_url_response_ms{url="https://httpstat.us/503 "}  = [value]
 -   [Grafana](https://grafana.com/)
 
 ---
-
-## Application's Screenshots
-
-### Grafana Dashboard
-
-![Grafana Dashboard](images/Grafana-Dashboard.png)
-
-### Prometheus Metrics
-
-##### URL Response time in Prometheus
-![Prometheus](images/Prometheus-ResponseTime.png)
-
-##### URL Status in Prometheus
-![Prometheus](images/Prometheus-StatusCode.png)
-
-##### Prometheus Targets
-![Prometheus](images/Prometheus-Targets.png)
-
-### Python Web Service
-
-##### Python Web Service
-![Prometheus](images/Python-WebService.png)
-
----
-
 ## Set-up
 
 1. Configure urls part in [urls.json](urls.json) with URLs you wish to monitor. This is currently configured with two urls as an example.
